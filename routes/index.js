@@ -2,21 +2,37 @@ const express = require('express');
 const router = express.Router();
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
-
+const nodemailer = require('nodemailer');
 let User = require('../models/user');
 let Complaint = require('../models/complaint');
 let ComplaintMapping = require('../models/complaint-mapping');
+let UpdateMapping = require('../models/update-mapping');
 
-
-router.get('/', ensureAuthenticated, (req, res, next) => {
-    res.render('index');
+router.get('/', ensureAuthenticated, (req,res,next) => {
+    console.log(req.user.username);
+    Complaint.find({ name: req.user.username }, (err, complaints) => {
+        if (err) throw err;
+        console.log(complaints); // log the complaints
+        if (complaints.length > 0) {
+            let complaintIds = complaints.map(complaint => complaint._id);
+            UpdateMapping.find({ complaintID: { $in: complaintIds } })
+            .exec((err, updates) => {
+                if (err) throw err;
+                console.log(updates); // log the updates
+                res.render('index', {
+                    updates : updates
+                });
+            });
+        } else {
+            console.log('No complaints found with the provided name');
+            res.render('index');
+        }
+    });
 });
-
 
 router.get('/login', (req, res, next) => {
     res.render('login');
 });
-
 
 router.get('/register', (req, res, next) => {
     res.render('register');
@@ -29,7 +45,6 @@ router.get('/logout', ensureAuthenticated,(req, res, next) => {
     res.redirect('/login');
 });
 
-
 router.get('/admin', ensureAuthenticated, (req,res,next) => {
     Complaint.getAllComplaints((err, complaints) => {
         if (err) throw err;
@@ -37,22 +52,134 @@ router.get('/admin', ensureAuthenticated, (req,res,next) => {
         User.getEngineer((err, engineer) => {
             if (err) throw err;
 
-            res.render('admin/admin', {
-                complaints : complaints,
-                engineer : engineer,
+            UpdateMapping.find({}, (err, updates) => {
+                if (err) throw err;
+
+                res.render('admin/admin', {
+                    complaints : complaints,
+                    engineer : engineer,
+                    updates: updates
+                });
             });
         });
     });        
 });
 
 
+router.post('/update-complaintwild', (req, res, next) => {
+    let mongoose = require('mongoose');
+    const complaintID = mongoose.Types.ObjectId(req.body.complaintID); // Convert complaintID to ObjectId
+    const update = req.body.update;
+    const engineerName = req.user.username;
+
+    req.checkBody('complaintID', 'Complaint ID field is required').notEmpty();
+    req.checkBody('update', 'Update field is required').notEmpty();
+
+    let errors = req.validationErrors();
+
+    if (errors) {
+        res.render('junior/juniorwildlife', {
+            errors: errors
+        });
+    } else {
+        const newUpdateMapping = new UpdateMapping({
+            complaintID: complaintID,
+            engineerName: engineerName,
+            update: update
+        });
+
+        UpdateMapping.registerUpdate(newUpdateMapping, (err, update) => {
+            if (err) throw err;
+            req.flash('success_msg', 'You have successfully updated the complaint');
+            res.redirect('/jeng');
+        });
+    }
+});
+
+router.post('/update-complaintforest', (req, res, next) => {
+    let mongoose = require('mongoose');
+    const complaintID = mongoose.Types.ObjectId(req.body.complaintID); // Convert complaintID to ObjectId
+    const update = req.body.update;
+    const engineerName = req.user.username;
+
+    req.checkBody('complaintID', 'Complaint ID field is required').notEmpty();
+    req.checkBody('update', 'Update field is required').notEmpty();
+
+    let errors = req.validationErrors();
+
+    if (errors) {
+        res.render('junior/juniorforest', {
+            errors: errors
+        });
+    } else {
+        const newUpdateMapping = new UpdateMapping({
+            complaintID: complaintID,
+            engineerName: engineerName,
+            update: update
+        });
+
+        UpdateMapping.registerUpdate(newUpdateMapping, (err, update) => {
+            if (err) throw err;
+            req.flash('success_msg', 'You have successfully updated the complaint');
+            res.redirect('/jeng');
+        });
+    }
+});
+// router.post('/update-complaint', ensureAuthenticated, (req, res, next) => {
+//     let mongoose = require('mongoose');
+//     const complaintID = mongoose.Types.ObjectId(req.body.complaintID);
+//     let update = req.body.update;
+//     console.log(complaintID);
+//     // Find the complaint in the database...
+//     ComplaintMapping.findOne({ complaintID: complaintID })
+//     .populate('complaintID')
+//     .exec((err, complaint) => {
+//         if (err) {
+//             console.log(err);
+//             return res.status(500).send('Server error');
+//         }
+
+//         if (complaint) {
+//             // Set up Nodemailer...
+//             let transporter = nodemailer.createTransport({
+//                 service: 'gmail',
+//                 auth: {
+//                     user: 'asfafafsaf',
+//                     pass: 'aasfafdafa'
+//                 }
+//             });
+//             console.log(complaint.complaintID.email);
+//             // Set up the email options...
+//             let mailOptions = {
+//                 from: 'afsafafa.com',
+//                 to: complaint.complaintID.email,
+//                 subject: 'Complaint Update',
+//                 text: update
+//             };
+
+//             // Send the email...
+//             transporter.sendMail(mailOptions, (error, info) => {
+//                 if (error) {
+//                     console.log(error);
+//                     res.status(500).send('Error while sending email.');
+//                 } else {
+//                     console.log('Email sent: ' + info.response);
+//                     res.status(200).send('Update email sent!');
+//                 }
+//             });
+//         } else {
+//             console.log('No complaint found with the provided ID');
+//             res.status(404).send('No complaint found with the provided ID');
+//         }
+//     });
+// });
 
 router.post('/assign', (req,res,next) => {
     const complaintID = req.body.complaintID;
-    const engineerName = req.body.engineerName;
+    const depName = req.body.depName;
 
     req.checkBody('complaintID', 'Contact field is required').notEmpty();
-    req.checkBody('engineerName', 'Description field is required').notEmpty();
+    req.checkBody('depName', 'Description field is required').notEmpty();
 
     let errors = req.validationErrors();
 
@@ -63,7 +190,7 @@ router.post('/assign', (req,res,next) => {
     } else {
         const newComplaintMapping = new ComplaintMapping({
             complaintID: complaintID,
-            engineerName: engineerName,
+            depName: depName,
         });
 
         ComplaintMapping.registerMapping(newComplaintMapping, (err, complaint) => {
@@ -75,11 +202,41 @@ router.post('/assign', (req,res,next) => {
 
 });
 
-
-router.get('/jeng', ensureAuthenticated, (req,res,next) => {
-    res.render('junior/junior');
+router.get('/jeng', ensureAuthenticated, (req, res, next) => {
+    ComplaintMapping.find({ engineerName: req.user.username })
+    .populate('complaintID')
+    .exec((err, assignedComplaints) => {
+        if (err) throw err;
+        console.log(assignedComplaints);
+        res.render('junior/junior', {
+            assignedComplaints: assignedComplaints
+        });
+    });
 });
 
+router.get('/jengforest', ensureAuthenticated, (req, res, next) => {
+    ComplaintMapping.find({ depName: req.user.role })
+    .populate('complaintID')
+    .exec((err, assignedComplaints) => {
+        if (err) throw err;
+        console.log(assignedComplaints);
+        res.render('junior/juniorforest', {
+            assignedComplaints: assignedComplaints
+        });
+    });
+});
+
+router.get('/jengwildlife', ensureAuthenticated, (req, res, next) => {
+    ComplaintMapping.find({ depName: req.user.role })
+    .populate('complaintID')
+    .exec((err, assignedComplaints) => {
+        if (err) throw err;
+        console.log(assignedComplaints);
+        res.render('junior/juniorwildlife', {
+            assignedComplaints: assignedComplaints
+        });
+    });
+});
 
 router.get('/complaint', ensureAuthenticated, (req, res, next) => {
     //console.log(req.session.passport.username);
@@ -221,9 +378,13 @@ router.post('/login', passport.authenticate('local',
         if(req.user.role==='admin'){
             res.redirect('/admin');
         }
-        else if(req.user.role==='jeng'){
-            res.redirect('/jeng');
+        else if(req.user.role==='jengforest'){
+            res.redirect('/jengforest');
         }
+        else if(req.user.role==='jengwildlife'){
+            res.redirect('/jengwildlife');
+        }
+
         else{
             res.redirect('/');
         }

@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 const dbconnect = require('../db')
 
 
-dbconnect()
+// dbconnect()
 
 
 const ComplaintSchema = mongoose.Schema({

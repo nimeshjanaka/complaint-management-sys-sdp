@@ -35,10 +35,9 @@
     </div>
     <div class="form-group">
         <label>Officer</label>
-        <select name="engineerName" id="engineerName" class="form-control">
-            {{#each engineer}}
-                <option value={{username}}> {{username}} </option>
-            {{/each}}
+        <select name="depName" id="depName" class="form-control">
+            <option value="jengwildlife">Wildlife Department</option>
+            <option value="jengforest">Forest Department</option>
         </select>
     </div>
     <div class="form-group">
@@ -46,3 +45,25 @@
     </div>
     </form>
 </div>
+<h3>Updates</h3>
+
+<table class="table table-bordered">
+  <thead class="table-success">
+    <tr>
+      <th scope="col">Complaint ID</th>
+      <th scope="col">Officer</th>
+      <th scope="col">Update</th>
+      <th scope="col">Date</th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each updates}}
+        <tr>
+            <td>{{complaintID}}</td>          
+            <td>{{engineerName}}</td>
+            <td>{{update}}</td>
+            <td>{{date}}</td>
+        </tr>
+    {{/each}}
+  </tbody>
+</table>

@@ -1,16 +1,17 @@
-const mongoose = require('mongoose')
-const dbconnect = require('../db')
+// ComplaintMapping.js
+const mongoose = require('mongoose');
+const dbconnect = require('../db');
 
-//Call  to connect the mongo db
-dbconnect()
-
+// Call to connect the mongo db
+// dbconnect();
 
 const ComplaintMappingSchema = mongoose.Schema({
     complaintID: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Complaint',
         required: true
     },
-    engineerName: {
+    depName: {
         type: String,
         required: true
     },

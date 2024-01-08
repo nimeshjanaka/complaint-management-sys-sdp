@@ -5,3 +5,24 @@
 <br>
 <br>
 <a href="/complaint" class="btn btn-success btn-lg">Register a Complaint</a>
+
+<h3>Updates</h3>
+
+<table class="table table-bordered">
+    <thead class="table-success">
+    <tr>
+        <th scope="col">Complaint ID</th>
+        <th scope="col">Update</th>
+        <th scope="col">Date</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{#each updates}}
+        <tr>
+            <td>{{complaintID}}</td>          
+            <td>{{update}}</td>
+            <td>{{date}}</td>
+        </tr>
+    {{/each}}
+    </tbody>
+</table>
